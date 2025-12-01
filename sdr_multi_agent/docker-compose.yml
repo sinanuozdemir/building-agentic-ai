@@ -1,0 +1,158 @@
+services:
+  # RabbitMQ broker for Celery
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: agent-rabbitmq
+    restart: unless-stopped
+    environment:
+      - RABBITMQ_DEFAULT_USER=agent
+      - RABBITMQ_DEFAULT_PASS=agent123
+      - RABBITMQ_DEFAULT_VHOST=/agent
+    ports:
+      - "5672:5672"      # AMQP port
+      - "15672:15672"    # Management UI
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - agent-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  hubspot-mcp-server:
+    build:
+      context: ./mcp_servers/hubspot_server
+      dockerfile: ../Dockerfile.template
+    platform: linux/amd64
+    container_name: hubspot-mcp-server
+    restart: unless-stopped
+    environment:
+      - PYTHONUNBUFFERED=1
+      - MCP_SERVER_NAME=hubspot-mcp-server
+      - MCP_SERVER_VERSION=1.0.0
+      - HUBSPOT_API_KEY=${HUBSPOT_API_KEY:-your_hubspot_api_key_here}
+    volumes:
+      # Optional: Mount logs directory
+      - ./logs:/app/logs
+    networks:
+      - agent-network
+    # Since MCP typically uses stdio, we'll use docker exec to interact
+    stdin_open: true
+    tty: true
+
+  research-mcp-server:
+    build:
+      context: ./mcp_servers/research_server
+      dockerfile: ../Dockerfile.template
+    platform: linux/amd64
+    container_name: research-mcp-server
+    restart: unless-stopped
+    environment:
+      - PYTHONUNBUFFERED=1
+      - MCP_SERVER_NAME=research-mcp-server
+      - MCP_SERVER_VERSION=1.0.0
+      - SERP_API_KEY=${SERP_API_KEY:-your_serpapi_key_here}
+      - FIRECRAWL_API_KEY=${FIRECRAWL_API_KEY:-your_firecrawl_api_key_here}
+    volumes:
+      # Optional: Mount logs directory
+      - ./logs:/app/logs
+    networks:
+      - agent-network
+    # Since MCP typically uses stdio, we'll use docker exec to interact
+    stdin_open: true
+    tty: true
+
+  email-mcp-server:
+    build:
+      context: ./mcp_servers/email_server
+      dockerfile: ../Dockerfile.node
+    platform: linux/amd64
+    container_name: email-mcp-server
+    restart: unless-stopped
+    environment:
+      - RESEND_API_KEY=${RESEND_API_KEY:-your_resend_api_key_here}
+      - SENDER_EMAIL_ADDRESS=${SENDER_EMAIL_ADDRESS:-your_email@example.com}
+      - REPLY_TO_EMAIL_ADDRESS=${REPLY_TO_EMAIL_ADDRESS:-your_email@example.com}
+    volumes:
+      # Optional: Mount logs directory
+      - ./logs:/app/logs
+    networks:
+      - agent-network
+    # Since MCP typically uses stdio, we'll use docker exec to interact
+    stdin_open: true
+    tty: true
+
+  # Celery worker for async agent tasks
+  agent-celery-worker:
+    build:
+      context: ./flask_app
+    platform: linux/amd64
+    container_name: agent-celery-worker
+    restart: unless-stopped
+    command: celery -A celery_app.celery worker --loglevel=info --concurrency=2
+    env_file:
+      - .env
+    environment:
+      - PYTHONUNBUFFERED=1
+      # Celery configuration
+      - CELERY_BROKER_URL=amqp://agent:agent123@rabbitmq:5672/%2Fagent
+      - CELERY_RESULT_BACKEND=rpc://
+      # API Keys - set these in .env file (see .env.example)
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-your_openai_api_key_here}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-your_openrouter_api_key_here}
+      # Optional LangSmith tracing
+      - LANGSMITH_TRACING=${LANGSMITH_TRACING:-true}
+      - LANGSMITH_ENDPOINT=${LANGSMITH_ENDPOINT:-https://api.smith.langchain.com}
+      - LANGSMITH_API_KEY=${LANGSMITH_API_KEY:-your_langsmith_api_key_here}
+      - LANGSMITH_PROJECT=${LANGSMITH_PROJECT:-ai-agent}
+    volumes:
+      - ./flask_app:/app
+      - /var/run/docker.sock:/var/run/docker.sock  # For Docker-in-Docker access
+    networks:
+      - agent-network
+
+  agent-flask-app:
+    build:
+      context: ./flask_app
+    platform: linux/amd64
+    container_name: agent-flask-app
+    restart: unless-stopped
+    ports:
+      - "8080:5000"
+    env_file:
+      - .env
+    environment:
+      - FLASK_ENV=development
+      - FLASK_DEBUG=true
+      - PYTHONUNBUFFERED=1
+      # Celery configuration
+      - CELERY_BROKER_URL=amqp://agent:agent123@rabbitmq:5672/%2Fagent
+      - CELERY_RESULT_BACKEND=rpc://
+      # API Keys - set these in .env file (see .env.example)
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-your_openai_api_key_here}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-your_openrouter_api_key_here}
+      # Optional LangSmith tracing
+      - LANGSMITH_API_KEY=${LANGSMITH_API_KEY:-your_langsmith_api_key_here}
+      - LANGSMITH_TRACING=${LANGSMITH_TRACING:-true}
+      - LANGSMITH_ENDPOINT=${LANGSMITH_ENDPOINT:-https://api.smith.langchain.com}
+      - LANGSMITH_PROJECT=${LANGSMITH_PROJECT:-ai-agent}
+    volumes:
+      - ./flask_app:/app
+      - /var/run/docker.sock:/var/run/docker.sock  # For Docker-in-Docker access
+    networks:
+      - agent-network
+    depends_on:
+      - rabbitmq
+      - hubspot-mcp-server
+      - research-mcp-server
+      - email-mcp-server
+
+networks:
+  agent-network:
+    driver: bridge
+
+volumes:
+  logs:
+  rabbitmq_data:

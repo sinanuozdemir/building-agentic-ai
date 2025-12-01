@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Playwright Code Executor</title>
+  <style>
+    body {
+      width: 600px;
+      min-height: 400px;
+      font-family: Arial, sans-serif;
+      padding: 10px;
+    }
+    h1 {
+      font-size: 20px;
+      margin-bottom: 10px;
+    }
+    textarea {
+      width: 100%;
+      height: 200px;
+      margin-bottom: 10px;
+      font-family: monospace;
+      resize: vertical;
+    }
+    .button-container {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    button {
+      padding: 8px 15px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-right: 5px;
+    }
+    #execute {
+      background-color: #4CAF50;
+      color: white;
+    }
+    #execute:hover {
+      background-color: #45a049;
+    }
+    #load-sample {
+      background-color: #2196F3;
+      color: white;
+    }
+    #load-sample:hover {
+      background-color: #0b7dda;
+    }
+    #status {
+      margin-top: 10px;
+      color: #777;
+      font-weight: bold;
+    }
+    .error {
+      color: #f44336;
+    }
+    .success {
+      color: #4CAF50;
+    }
+    .pending {
+      color: #2196F3;
+    }
+    #console-output {
+      margin-top: 15px;
+      border: 1px solid #ddd;
+      padding: 10px;
+      font-family: monospace;
+      background-color: #f5f5f5;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .console-log {
+      color: #333;
+    }
+    .console-error {
+      color: #f44336;
+    }
+    .console-warn {
+      color: #ff9800;
+    }
+    .line-number {
+      font-weight: bold;
+      color: #E91E63;
+      background-color: #ffebee;
+      padding: 2px 4px;
+      border-radius: 3px;
+      margin-right: 5px;
+    }
+    .error-message {
+      color: #f44336;
+    }
+    .result-section {
+      margin-top: 15px;
+    }
+    .result-title {
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    .tabs {
+      display: flex;
+      margin-bottom: 10px;
+    }
+    .tab {
+      padding: 8px 15px;
+      cursor: pointer;
+      border: 1px solid #ddd;
+      background-color: #f5f5f5;
+      margin-right: 5px;
+    }
+    .tab.active {
+      background-color: #fff;
+      border-bottom: 2px solid #2196F3;
+    }
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    pre {
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    .form-group input {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+    .connection-status {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      margin-right: 8px;
+    }
+    .connection-status.connected {
+      background-color: #4CAF50;
+    }
+    .connection-status.disconnected {
+      background-color: #f44336;
+    }
+  </style>
+  <!-- Load local Pusher script -->
+  <script src="./pusher.min.js"></script>
+</head>
+<body>
+  <h1>Playwright Code Executor</h1>
+  
+  <div class="tabs">
+    <div class="tab active" data-tab="code-tab">Code</div>
+    <div class="tab" data-tab="output-tab">Output</div>
+    <div class="tab" data-tab="history-tab">History</div>
+    <div class="tab" data-tab="pusher-tab">Pusher Config</div>
+  </div>
+  
+  <div id="code-tab" class="tab-content active">
+    <p>Enter your Playwright-like code below:</p>
+    <textarea id="code-input" placeholder="// Supported commands:
+await page.goto('https://example.com');
+await page.click('.button');
+await page.fill('#input', 'text');
+const text = await page.textContent('.element');
+console.log(text);
+return { result: text };"></textarea>
+    <div class="button-container">
+      <button id="load-sample">Load Sample</button>
+      <button id="execute">Execute Code</button>
+    </div>
+    <div id="status"></div>
+  </div>
+  
+  <div id="output-tab" class="tab-content">
+    <div class="result-section">
+      <div class="result-title">Console Output:</div>
+      <div id="console-output"></div>
+    </div>
+    
+    <div class="result-section">
+      <div class="result-title">Results:</div>
+      <div id="result-output"></div>
+    </div>
+  </div>
+  
+  <div id="history-tab" class="tab-content">
+    <div class="result-title">Recent Runs:</div>
+    <div id="history-output"></div>
+  </div>
+  
+  <div id="pusher-tab" class="tab-content">
+    <div class="form-group">
+      <p>Configure Pusher to remotely execute code via push notifications</p>
+      <div id="pusher-status">
+        <span class="connection-status disconnected"></span>
+        <span>Disconnected</span>
+      </div>
+    </div>
+    <div class="form-group">
+      <label for="pusher-app-key">App Key</label>
+      <input type="text" id="pusher-app-key" placeholder="Pusher App Key">
+    </div>
+    <div class="form-group">
+      <label for="pusher-cluster">Cluster</label>
+      <input type="text" id="pusher-cluster" placeholder="e.g., us3, eu, ap1" value="us3">
+    </div>
+    <div class="form-group">
+      <label for="pusher-channel">Channel Name</label>
+      <input type="text" id="pusher-channel" placeholder="Channel to subscribe to">
+    </div>
+    <div class="form-group">
+      <label for="pusher-event">Event Name</label>
+      <input type="text" id="pusher-event" placeholder="Event to listen for" value="my-event">
+    </div>
+    <div class="button-container">
+      <button id="pusher-connect" class="btn-connect">Connect</button>
+      <button id="pusher-disconnect" class="btn-disconnect" disabled>Disconnect</button>
+    </div>
+    <div class="form-group">
+      <p><strong>Note:</strong> Pusher is set up with the sample app configuration.</p>
+      <p>Remote commands should be sent in this format:</p>
+      <pre>{
+  "action": "executePlaywrightCode",
+  "code": "await page.goto('https://example.com');\nreturn document.title;",
+  "requestId": "unique-id-123",
+  "responseChannel": "optional-response-channel",
+  "responseEvent": "optional-response-event",
+  "responseEndpoint": "https://your-api-endpoint.com/trigger-event"
+}</pre>
+    </div>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html> 

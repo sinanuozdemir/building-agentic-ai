@@ -1,0 +1,12 @@
+langchain>=0.0.249
+langchain-core>=0.0.20
+langchain-openai>=0.0.3
+langgraph>=0.0.9
+streamlit==1.32.0
+python-dotenv==1.0.1
+playwright==1.40.0
+fastapi==0.108.0
+uvicorn==0.25.0
+pydantic==2.5.3
+requests==2.31.0
+tiktoken==0.5.2 

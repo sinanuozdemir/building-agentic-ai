@@ -1,0 +1,27 @@
+{
+  "name": "Lead Qualifying Agent",
+  "description": "Configurable AI Assistant with MCP Tool Integration",
+  "mcp_servers": {
+    "hubspot-server": {
+      "enabled": true,
+      "description": "HubSpot CRM integration for contact creation",
+      "command": "docker",
+      "args": ["exec", "-i", "hubspot-mcp-server", "python", "/app/mcp_server.py"],
+      "transport": "stdio"
+    },
+    "research-server": {
+      "enabled": true,
+      "description": "Web search and scraping tools using SerpAPI and Firecrawl",
+      "command": "docker",
+      "args": ["exec", "-i", "research-mcp-server", "python", "/app/mcp_server.py"],
+      "transport": "stdio"
+    }
+  },
+  "agent_settings": {
+    "extra_instructions": "You are a lead qualifying agent. For a given lead, use the tools provided to make sure that this lead is a good fit for using my book in their classes. If they are a good fit, update the contact to have a lead status of 'Open'. If they are not a good fit, update the contact to have a lead status of 'Unqualified'.",
+    "model": "openai/gpt-4.1-mini",
+    "temperature": 0.3,
+    "max_tokens": 4000,
+    "casual_tone": true
+  }
+} 

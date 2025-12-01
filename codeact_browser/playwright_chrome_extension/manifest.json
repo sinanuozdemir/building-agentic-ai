@@ -1,0 +1,34 @@
+{
+  "manifest_version": 3,
+  "name": "Playwright Code Executor",
+  "version": "1.0",
+  "description": "Execute Playwright JavaScript code on the current tab",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "tabs",
+    "storage",
+    "debugger"
+  ],
+  "action": {
+    "default_popup": "src/popup.html"
+  },
+  "background": {
+    "service_worker": "src/background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["src/content.js"]
+    }
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["src/pusher.min.js", "pusher.min.js"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+} 

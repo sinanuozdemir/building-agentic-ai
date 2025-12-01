@@ -1,0 +1,26 @@
+{
+  "name": "screenshot-tray-app",
+  "version": "1.0.0",
+  "description": "Simple Electron app for taking screenshots from system tray",
+  "main": "main.js",
+  "scripts": {
+    "build-ts": "tsc",
+    "start": "npm run build-ts && electron .",
+    "build": "electron-builder"
+  },
+  "author": "User",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^24.0.14",
+    "electron": "^28.0.0",
+    "electron-builder": "^24.0.0",
+    "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "@langchain/core": "^0.3.62",
+    "@langchain/langgraph": "^0.3.8",
+    "@langchain/openai": "^0.5.18",
+    "screenshot-desktop": "^1.15.0",
+    "zod": "^3.25.76"
+  }
+}

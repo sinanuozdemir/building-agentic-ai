@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text-to-SQL RAG System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .card {
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border: none;
+            margin-bottom: 1rem;
+        }
+        .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: 500;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+        }
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+            transform: translateY(-1px);
+        }
+        .loading {
+            display: none;
+        }
+        .loading.show {
+            display: block;
+        }
+        .score-badge {
+            font-size: 0.8em;
+            margin-left: 0.5rem;
+        }
+        .sql-result-table {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .evidence-item {
+            background: #f8f9fa;
+            border-left: 4px solid #007bff;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 0 4px 4px 0;
+        }
+        .sql-code {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 1rem;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            overflow-x: auto;
+        }
+        .error-message {
+            background: #fed7d7;
+            color: #c53030;
+            padding: 1rem;
+            border-radius: 6px;
+            border: 1px solid #feb2b2;
+        }
+        .success-message {
+            background: #c6f6d5;
+            color: #2f855a;
+            padding: 1rem;
+            border-radius: 6px;
+            border: 1px solid #9ae6b4;
+        }
+        .navbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+        .form-select:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <nav class="navbar navbar-dark mb-4">
+        <div class="container">
+            <span class="navbar-brand mb-0 h1">
+                <i class="fas fa-database me-2"></i>
+                Text-to-SQL RAG System
+            </span>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 mx-auto">
+                <!-- Query Form -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-search me-2"></i>
+                            Query Interface
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="queryForm">
+                            <div class="mb-3">
+                                <label for="database" class="form-label">Select Database</label>
+                                <select class="form-select" id="database" required>
+                                    <option value="">Choose a database...</option>
+                                    {% for db in databases %}
+                                    <option value="{{ db }}">{{ db.replace('_', ' ').title() }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="embedding_model" class="form-label">Select Embedding Model</label>
+                                <select class="form-select" id="embedding_model" required>
+                                    {% for embedder in embedders %}
+                                    <option value="{{ embedder }}" {% if embedder == 'text-embedding-3-small' %}selected{% endif %}>
+                                        {{ embedder }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <div class="form-text">
+                                    <small class="text-muted">Different embedding models may provide varying retrieval quality and performance.</small>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="question" class="form-label">Question</label>
+                                <textarea class="form-control" id="question" rows="3" 
+                                         placeholder="Enter your question about the database..." required></textarea>
+                                <div class="form-text">
+                                    <small id="sampleQuestion" class="text-muted">
+                                        Select a database to see a sample question.
+                                    </small>
+                                </div>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary btn-lg w-100">
+                                <i class="fas fa-play me-2"></i>
+                                Run RAG Query
+                            </button>
+                        </form>
+                        
+                        <div class="loading text-center mt-3">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="mt-2 text-muted">Processing your query...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Results Container -->
+                <div id="results" style="display: none;">
+                    <!-- Query Info -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Query Information
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="queryInfoContainer">
+                                <!-- Query info will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Evidence Retrieved -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="fas fa-search-plus me-2"></i>
+                                Evidence Retrieved
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="evidenceContainer">
+                                <!-- Evidence items will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Generated SQL -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="fas fa-code me-2"></i>
+                                Generated SQL Query
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="sqlContainer">
+                                <!-- SQL query will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SQL Results -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="fas fa-table me-2"></i>
+                                Query Results
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="sqlResultsContainer">
+                                <!-- SQL results will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Sample questions data
+        const sampleQuestions = JSON.parse('{{ sample_questions | tojson | safe }}');
+        
+        // Update sample question when database is selected
+        document.getElementById('database').addEventListener('change', function() {
+            const selectedDb = this.value;
+            const sampleQuestionEl = document.getElementById('sampleQuestion');
+            const questionEl = document.getElementById('question');
+            
+            if (selectedDb && sampleQuestions[selectedDb]) {
+                sampleQuestionEl.innerHTML = `<strong>Sample question:</strong> ${sampleQuestions[selectedDb]}`;
+                sampleQuestionEl.style.cursor = 'pointer';
+                sampleQuestionEl.onclick = function() {
+                    questionEl.value = sampleQuestions[selectedDb];
+                };
+            } else {
+                sampleQuestionEl.innerHTML = 'Select a database to see a sample question.';
+                sampleQuestionEl.style.cursor = 'default';
+                sampleQuestionEl.onclick = null;
+            }
+        });
+
+        // Handle form submission
+        document.getElementById('queryForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const database = document.getElementById('database').value;
+            const embedding_model = document.getElementById('embedding_model').value;
+            const question = document.getElementById('question').value;
+            
+            if (!database || !embedding_model || !question) {
+                alert('Please select a database, embedding model, and enter a question.');
+                return;
+            }
+            
+            // Show loading, hide results
+            document.querySelector('.loading').classList.add('show');
+            document.getElementById('results').style.display = 'none';
+            
+            try {
+                const response = await fetch('/api/query', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        database: database,
+                        embedding_model: embedding_model,
+                        question: question
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'An error occurred');
+                }
+                
+                // Display results
+                displayResults(data);
+                
+            } catch (error) {
+                console.error('Error:', error);
+                displayError(error.message);
+            } finally {
+                document.querySelector('.loading').classList.remove('show');
+            }
+        });
+
+        function displayResults(data) {
+            document.getElementById('results').style.display = 'block';
+            
+            // Display query info
+            displayQueryInfo(data);
+            
+            // Display evidence
+            displayEvidence(data.rag_result.retrieved_documents);
+            
+            // Display SQL query
+            displaySQL(data.sql_query);
+            
+            // Display SQL results
+            displaySQLResults(data.sql_result);
+        }
+
+        function displayQueryInfo(data) {
+            const container = document.getElementById('queryInfoContainer');
+            
+            container.innerHTML = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <strong>Database:</strong> ${escapeHtml(data.database)}<br>
+                        <strong>Embedding Model:</strong> ${escapeHtml(data.embedding_model)}<br>
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Question:</strong> ${escapeHtml(data.question)}
+                    </div>
+                </div>
+            `;
+        }
+
+        function displayEvidence(documents) {
+            const container = document.getElementById('evidenceContainer');
+            
+            if (!documents || documents.length === 0) {
+                container.innerHTML = '<p class="text-muted">No evidence retrieved.</p>';
+                return;
+            }
+            
+            let html = '';
+            documents.forEach((doc, index) => {
+                html += `
+                    <div class="evidence-item">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <h6 class="mb-2">Evidence ${index + 1}</h6>
+                            <span class="badge bg-primary score-badge">Score: ${doc.score.toFixed(3)}</span>
+                        </div>
+                        <p class="mb-2">${escapeHtml(doc.content)}</p>
+                        ${doc.metadata && Object.keys(doc.metadata).length > 0 ? 
+                            `<small class="text-muted">Metadata: ${JSON.stringify(doc.metadata, null, 2)}</small>` : 
+                            ''}
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+
+        function displaySQL(sqlQuery) {
+            const container = document.getElementById('sqlContainer');
+            
+            if (!sqlQuery) {
+                container.innerHTML = '<div class="error-message">No SQL query was generated.</div>';
+                return;
+            }
+            
+            container.innerHTML = `
+                <div class="sql-code">${escapeHtml(sqlQuery)}</div>
+                <button class="btn btn-outline-secondary btn-sm mt-2" onclick="copyToClipboard('${escapeHtml(sqlQuery).replace(/'/g, "\\'")}')">
+                    <i class="fas fa-copy me-1"></i>Copy SQL
+                </button>
+            `;
+        }
+
+        function displaySQLResults(sqlResult) {
+            const container = document.getElementById('sqlResultsContainer');
+            
+            if (sqlResult.error) {
+                container.innerHTML = `
+                    <div class="error-message">
+                        <strong>SQL Execution Error:</strong><br>
+                        ${escapeHtml(sqlResult.error)}
+                    </div>
+                `;
+                return;
+            }
+            
+            if (!sqlResult.success || !sqlResult.data || sqlResult.data.length === 0) {
+                container.innerHTML = '<div class="error-message">No results returned from the query.</div>';
+                return;
+            }
+            
+            // Create table
+            let html = `
+                <div class="success-message mb-3">
+                    Query executed successfully! Found ${sqlResult.row_count} row(s).
+                </div>
+                <div class="sql-result-table">
+                    <table class="table table-striped table-hover">
+                        <thead class="table-dark">
+                            <tr>
+            `;
+            
+            // Table headers
+            sqlResult.columns.forEach(column => {
+                html += `<th>${escapeHtml(column)}</th>`;
+            });
+            html += '</tr></thead><tbody>';
+            
+            // Table rows
+            sqlResult.data.forEach(row => {
+                html += '<tr>';
+                row.forEach(cell => {
+                    html += `<td>${cell !== null ? escapeHtml(String(cell)) : '<em class="text-muted">NULL</em>'}</td>`;
+                });
+                html += '</tr>';
+            });
+            
+            html += '</tbody></table></div>';
+            
+            container.innerHTML = html;
+        }
+
+        function displayError(message) {
+            document.getElementById('results').style.display = 'block';
+            document.getElementById('queryInfoContainer').innerHTML = '';
+            document.getElementById('evidenceContainer').innerHTML = '';
+            document.getElementById('sqlContainer').innerHTML = '';
+            document.getElementById('sqlResultsContainer').innerHTML = `
+                <div class="error-message">
+                    <strong>Error:</strong><br>
+                    ${escapeHtml(message)}
+                </div>
+            `;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(function() {
+                // Show success feedback
+                const button = event.target.closest('button');
+                const originalHTML = button.innerHTML;
+                button.innerHTML = '<i class="fas fa-check me-1"></i>Copied!';
+                button.classList.remove('btn-outline-secondary');
+                button.classList.add('btn-success');
+                
+                setTimeout(() => {
+                    button.innerHTML = originalHTML;
+                    button.classList.remove('btn-success');
+                    button.classList.add('btn-outline-secondary');
+                }, 2000);
+            });
+        }
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Text-to-SQL RAG System loaded');
+        });
+    </script>
+</body>
+</html> 

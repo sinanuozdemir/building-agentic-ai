@@ -1,0 +1,21 @@
+{
+  "name": "extension",
+  "version": "0.0.1",
+  "description": "Transformers.js | Sample browser extension",
+  "scripts": {
+    "build": "webpack",
+    "dev": "webpack --watch"
+  },
+  "type": "module",
+  "author": "Sinan Ozdemir",
+  "license": "MIT",
+  "devDependencies": {
+    "copy-webpack-plugin": "^11.0.0",
+    "html-webpack-plugin": "^5.5.1",
+    "webpack": "^5.79.0",
+    "webpack-cli": "^6.0.1"
+  },
+  "dependencies": {
+    "@huggingface/transformers": "^3.7.1"
+  }
+}

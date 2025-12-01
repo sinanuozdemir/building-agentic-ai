@@ -1,0 +1,54 @@
+{
+  "manifest_version": 3,
+  "name": "extension",
+  "description": "Transformers.js | Sample browser extension",
+  "version": "0.0.1",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "contextMenus"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "content.js"
+      ]
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "inject-classifier.js",
+        "popup.js",
+        "*.wasm",
+        "*.jsep.mjs"
+      ],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  "minimum_chrome_version": "92",
+  "action": {
+    "default_icon": {
+      "16": "icons/icon.png",
+      "24": "icons/icon.png",
+      "32": "icons/icon.png"
+    },
+    "default_title": "Transformers.js",
+    "default_popup": "popup.html"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self';"
+  },
+  "icons": {
+    "16": "icons/icon.png",
+    "48": "icons/icon.png",
+    "128": "icons/icon.png"
+  }
+}

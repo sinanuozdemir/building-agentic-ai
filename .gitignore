@@ -1,0 +1,73 @@
+# Python virtual environments
+venv/
+env/
+.venv/
+.env/
+ENV/
+
+# Environment files
+.env
+.env.*
+*.env
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# OS specific files
+.DS_Store
+Thumbs.db
+
+# Editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+*browser_service.log
+
+# Jupyter Notebook
+.ipynb_checkpoints
+codeact_browser/browser_service.log
+codeact_browser/*.png
+codeact_browser/*.html
+
+*.wav
+*.ulaw
+
+bert_clf_results/
+
+clf.ipynb
+
+# Image and data files
+*.png
+!images/cover.png
+*.csv
+
+# Node modules
+node_modules/
+
+# Large binary files
+*.dylib
+*.exe
+*.bin
+*.pickle
+*.sqlite
+*.sqlite3
+*.sqlite-shm
+*.sqlite-wal
+
+# Database and data files
+*.db
+*.sqlite*
+
+# ChromaDB data
+**/chromadb/
+**/chroma.sqlite3
+**/image_chromadb/

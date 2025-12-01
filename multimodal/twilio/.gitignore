@@ -1,0 +1,31 @@
+# Environment variables
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+
+# Recorded calls
+recorded_calls/*.wav
+recorded_calls/*.ulaw
+
+# Logs
+*.log
+ngrok.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+

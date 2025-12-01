@@ -1,0 +1,46 @@
+services:
+  twilio-app:
+    build: .
+    container_name: twilio-voice-assistant
+    ports:
+      - "5015:5015"
+    environment:
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - PORT=${PORT:-5015}
+      # Uncomment and add if you need Twilio credentials
+      # - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID}
+      # - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN}
+    volumes:
+      # Mount recorded_calls directory to persist recordings
+      - ./recorded_calls:/app/recorded_calls
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5015/test"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - twilio-network
+
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: twilio-ngrok
+    command:
+      - "http"
+      - "twilio-app:5015"
+      - "--url=twilio-applied-ai.ngrok.io"
+      - "--region=eu"
+      - "--log=stdout"
+    environment:
+      - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
+    depends_on:
+      - twilio-app
+    restart: unless-stopped
+    networks:
+      - twilio-network
+
+networks:
+  twilio-network:
+    driver: bridge
+

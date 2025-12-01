@@ -1,0 +1,27 @@
+{
+  "name": "Lead Generation Agent",
+  "description": "Configurable AI Assistant with MCP Tool Integration",
+  "mcp_servers": {
+    "hubspot-server": {
+      "enabled": true,
+      "description": "HubSpot CRM integration for contact creation",
+      "command": "docker",
+      "args": ["exec", "-i", "hubspot-mcp-server", "python", "/app/mcp_server.py"],
+      "transport": "stdio"
+    },
+    "research-server": {
+      "enabled": true,
+      "description": "Web search and scraping tools using SerpAPI and Firecrawl",
+      "command": "docker",
+      "args": ["exec", "-i", "research-mcp-server", "python", "/app/mcp_server.py"],
+      "transport": "stdio"
+    }
+  },
+  "agent_settings": {
+    "extra_instructions": "You are a lead generator. I need you to find professors/lecturers of universities that speak English and teach Data Science, ML, AI, etc. Leads you find should potentially be able to use my book in their classes. Find as much information as you can about the classes they teach, their research, and their publications. When you find a suitable lead, you must do the following\n\n1. Create a HubSpot contact for them with their email you found\n\n2. Add a note with as much information as you can about the lead, including where you found their email, links to their research and publications, personal website, and any other relevant information.\n\n3. Add their email address to the contact and finally\n\n4. Set their lead status to 'New'. Follow these steps in order and do not skip any steps.",
+    "model": "openai/gpt-4.1",
+    "temperature": 0.3,
+    "max_tokens": 4000,
+    "casual_tone": true
+  }
+} 

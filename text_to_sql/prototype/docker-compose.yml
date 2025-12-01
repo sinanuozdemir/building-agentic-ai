@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  text-to-sql-rag:
+    build: .
+    ports:
+      - "5001:5000"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - FLASK_ENV=development
+    volumes:
+      # Mount the databases directory
+      - ../dbs:/app/dbs:ro
+      # Mount the src directory for RAG system
+      - ../src:/app/src:ro
+      # Mount the dev.json file for evidence data
+      - ../dev.json:/app/dev.json:ro
+      # Persist ChromaDB data
+      - chromadb_data:/app/chromadb
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  chromadb_data: 

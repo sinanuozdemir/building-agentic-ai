@@ -1,0 +1,11 @@
+Flask
+python-dotenv
+langchain
+langchain-openai
+langchain-chroma
+langchain-huggingface
+langchain-cohere
+chromadb
+langgraph
+pydantic
+pandas

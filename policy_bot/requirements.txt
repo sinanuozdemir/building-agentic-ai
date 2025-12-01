@@ -1,0 +1,7 @@
+requests>=2.28.0
+beautifulsoup4>=4.11.0
+langchain>=0.0.200
+langchain-openai>=0.0.2
+langchain-core>=0.0.20
+pydantic>=2.0.0
+python-dotenv>=1.0.0 

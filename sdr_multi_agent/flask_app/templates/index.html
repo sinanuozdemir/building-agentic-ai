@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generic Agent - MCP Powered AI Assistant</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            display: flex;
+            height: 80vh;
+            min-height: 600px;
+        }
+
+        .sidebar {
+            width: 300px;
+            background: #f8f9fa;
+            border-right: 1px solid #e9ecef;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: #2c3e50;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            opacity: 0.8;
+            font-size: 14px;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-indicator.connected {
+            background: #28a745;
+        }
+
+        .status-indicator.disconnected {
+            background: #dc3545;
+        }
+
+        .status-indicator.loading {
+            background: #ffc107;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: flex-start;
+        }
+
+        .message.user {
+            justify-content: flex-end;
+        }
+
+        .message-content {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            word-wrap: break-word;
+        }
+
+        .message.user .message-content {
+            background: #007bff;
+            color: white;
+            border-bottom-right-radius: 6px;
+        }
+
+        .message.ai .message-content {
+            background: white;
+            border: 1px solid #e9ecef;
+            border-bottom-left-radius: 6px;
+        }
+
+        .message-meta {
+            font-size: 11px;
+            opacity: 0.6;
+            margin-top: 4px;
+        }
+
+        .tools-used {
+            margin-top: 8px;
+            font-size: 12px;
+            color: #6c757d;
+        }
+
+        .tool-badge {
+            display: inline-block;
+            background: #e9ecef;
+            padding: 2px 6px;
+            border-radius: 10px;
+            margin-right: 4px;
+            font-size: 10px;
+        }
+
+        .input-area {
+            padding: 20px;
+            border-top: 1px solid #e9ecef;
+            background: white;
+        }
+
+        .input-container {
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+        }
+
+        .message-input {
+            flex: 1;
+            min-height: 20px;
+            max-height: 120px;
+            padding: 12px 16px;
+            border: 2px solid #e9ecef;
+            border-radius: 20px;
+            resize: none;
+            font-family: inherit;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .message-input:focus {
+            border-color: #007bff;
+        }
+
+        .send-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 44px;
+            height: 44px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .send-button:hover:not(:disabled) {
+            background: #0056b3;
+        }
+
+        .send-button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+
+        .config-section {
+            margin-bottom: 20px;
+        }
+
+        .config-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #495057;
+            font-size: 14px;
+        }
+
+        .config-select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            background: white;
+            font-size: 14px;
+            color: #495057;
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+
+        .config-select:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+
+        .config-info {
+            margin-top: 6px;
+            font-size: 12px;
+            color: #6c757d;
+            line-height: 1.4;
+        }
+
+        .sidebar h3 {
+            margin-bottom: 15px;
+            color: #495057;
+            font-size: 16px;
+        }
+
+        .tools-list {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .tool-item {
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+        }
+
+        .tool-name {
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: #495057;
+        }
+
+        .tool-description {
+            font-size: 12px;
+            color: #6c757d;
+            line-height: 1.4;
+        }
+
+        .init-button {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-bottom: 20px;
+            font-size: 14px;
+            transition: background-color 0.2s;
+        }
+
+        .init-button:hover:not(:disabled) {
+            background: #218838;
+        }
+
+        .init-button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                height: 100vh;
+                border-radius: 0;
+            }
+            
+            .sidebar {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <div class="config-section">
+                <label class="config-label" for="agentConfigSelect">Agent Configuration</label>
+                <select id="agentConfigSelect" class="config-select">
+                    <option value="">Loading configurations...</option>
+                </select>
+                <div id="configInfo" class="config-info">
+                    Select an agent configuration to customize behavior and available tools.
+                </div>
+            </div>
+
+            <button id="initButton" class="init-button">
+                <span class="status-indicator disconnected"></span>
+                Initialize Agent
+            </button>
+            
+            <h3>Available Tools</h3>
+            <div id="toolsList" class="tools-list">
+                <p style="color: #6c757d; font-size: 14px; text-align: center; margin-top: 20px;">
+                    Initialize the agent to see available tools
+                </p>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="header">
+                <h1>🤖 Generic Agent</h1>
+                <p>MCP-Powered AI Assistant</p>
+            </div>
+
+            <div class="chat-area">
+                <div id="messages" class="messages">
+                    <div class="message ai">
+                        <div class="message-content">
+                            <strong>Welcome to Generic Agent! 👋</strong><br><br>
+                            I'm your configurable AI assistant. I can help you with:
+                            <ul style="margin: 10px 0; padding-left: 20px;">
+                                <li>Research and data analysis</li>
+                                <li>Content and communication generation</li>
+                                <li>Workflow automation</li>
+                                <li>External service integration</li>
+                                <li>Task management and scheduling</li>
+                            </ul>
+                            Select an agent configuration above and initialize to get started!
+                        </div>
+                    </div>
+                </div>
+
+                <div class="input-area">
+                    <div class="input-container">
+                        <textarea 
+                            id="messageInput" 
+                            class="message-input" 
+                            placeholder="Type your message here... (e.g., 'Search for technology prospects in San Francisco')"
+                            disabled
+                        ></textarea>
+                        <button id="sendButton" class="send-button" disabled>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M2,21L23,12L2,3V10L17,12L2,14V21Z" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class GenericAgentUI {
+            constructor() {
+                this.isInitialized = false;
+                this.isLoading = false;
+                this.baseSessionId = 'web-' + Date.now();
+                this.currentAgentConfig = '';
+                this.agentConfigs = {};
+                this.initElements();
+                this.bindEvents();
+                this.loadAgentConfigs();
+                this.checkHealth();
+            }
+
+            get conversationId() {
+                // Generate unique conversation ID for each agent config
+                const configSuffix = this.currentAgentConfig ? `_${this.currentAgentConfig.replace('.json', '')}` : '_default';
+                return this.baseSessionId + configSuffix;
+            }
+
+            async loadAgentConfigs() {
+                try {
+                    const response = await fetch('/api/agent-configs');
+                    const data = await response.json();
+                    
+                    if (data.success && data.configs) {
+                        this.agentConfigs = data.configs;
+                        this.populateConfigSelect();
+                        this.updateConfigInfo();
+                    } else {
+                        console.error('Failed to load agent configs:', data.error);
+                        // Fallback to default if API fails
+                        this.agentConfigs = {
+                            'agent_config.json': {
+                                name: 'Default Agent',
+                                description: 'Default agent configuration'
+                            }
+                        };
+                        this.populateConfigSelect();
+                        this.updateConfigInfo();
+                    }
+                } catch (error) {
+                    console.error('Error loading agent configs:', error);
+                    // Fallback to default if API fails
+                    this.agentConfigs = {
+                        'agent_config.json': {
+                            name: 'Default Agent',
+                            description: 'Default agent configuration'
+                        }
+                    };
+                    this.populateConfigSelect();
+                    this.updateConfigInfo();
+                }
+            }
+
+            populateConfigSelect() {
+                const select = document.getElementById('agentConfigSelect');
+                select.innerHTML = ''; // Clear existing options
+                
+                // Add options for each discovered config
+                Object.entries(this.agentConfigs).forEach(([filename, config]) => {
+                    const option = document.createElement('option');
+                    option.value = filename;
+                    option.textContent = config.name;
+                    select.appendChild(option);
+                });
+                
+                // Set the first option as selected and update current config
+                if (Object.keys(this.agentConfigs).length > 0) {
+                    const firstConfig = Object.keys(this.agentConfigs)[0];
+                    select.value = firstConfig;
+                    this.currentAgentConfig = firstConfig;
+                }
+            }
+
+            initElements() {
+                this.initButton = document.getElementById('initButton');
+                this.messageInput = document.getElementById('messageInput');
+                this.sendButton = document.getElementById('sendButton');
+                this.messages = document.getElementById('messages');
+                this.toolsList = document.getElementById('toolsList');
+                this.agentConfigSelect = document.getElementById('agentConfigSelect');
+                this.configInfo = document.getElementById('configInfo');
+            }
+
+            bindEvents() {
+                this.initButton.addEventListener('click', () => this.initializeAgent());
+                this.sendButton.addEventListener('click', () => this.sendMessage());
+                this.agentConfigSelect.addEventListener('change', (e) => this.handleConfigChange(e.target.value));
+                this.messageInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        this.sendMessage();
+                    }
+                });
+                this.messageInput.addEventListener('input', () => this.adjustTextareaHeight());
+            }
+
+            handleConfigChange(newConfig) {
+                // Reset agent state when config changes
+                this.currentAgentConfig = newConfig;
+                this.isInitialized = false;
+                
+                // Reset UI state
+                this.initButton.innerHTML = '<span class="status-indicator disconnected"></span> Initialize Agent';
+                this.initButton.disabled = false;
+                this.messageInput.disabled = true;
+                this.sendButton.disabled = true;
+                
+                // Clear chat history
+                this.clearChat();
+                
+                // Update config info
+                this.updateConfigInfo();
+                
+                // Clear tools display
+                this.toolsList.innerHTML = `
+                    <p style="color: #6c757d; font-size: 14px; text-align: center; margin-top: 20px;">
+                        Initialize the agent to see available tools
+                    </p>
+                `;
+                
+                // Show welcome message for new agent
+                const configName = this.agentConfigs[newConfig]?.name || 'Default Agent';
+                this.addMessage('ai', `Switched to: ${configName}. Click "Initialize Agent" to get started with this configuration.`);
+            }
+
+            updateConfigInfo() {
+                const selectedConfig = this.agentConfigSelect.value;
+                const config = this.agentConfigs[selectedConfig];
+                if (config) {
+                    this.configInfo.innerHTML = `<strong>${config.name}:</strong> ${config.description}`;
+                }
+            }
+
+            adjustTextareaHeight() {
+                this.messageInput.style.height = 'auto';
+                this.messageInput.style.height = Math.min(this.messageInput.scrollHeight, 120) + 'px';
+            }
+
+            async checkHealth() {
+                try {
+                    const response = await fetch('/api/health');
+                    const data = await response.json();
+                    this.updateStatus(data.status === 'healthy' && data.initialized);
+                } catch (error) {
+                    console.error('Health check failed:', error);
+                    this.updateStatus(false);
+                }
+            }
+
+            updateStatus(isHealthy) {
+                const indicator = this.initButton.querySelector('.status-indicator');
+                indicator.className = `status-indicator ${isHealthy ? 'connected' : 'disconnected'}`;
+                
+                if (isHealthy) {
+                    this.isInitialized = true;
+                    this.initButton.innerHTML = '<span class="status-indicator connected"></span> Agent Ready';
+                    this.initButton.disabled = true;
+                    this.messageInput.disabled = false;
+                    this.sendButton.disabled = false;
+                    this.loadTools();
+                }
+            }
+
+            async initializeAgent() {
+                if (this.isLoading) return;
+                
+                this.isLoading = true;
+                this.initButton.disabled = true;
+                
+                const indicator = this.initButton.querySelector('.status-indicator');
+                indicator.className = 'status-indicator loading';
+                this.initButton.innerHTML = '<span class="status-indicator loading"></span> Initializing...';
+
+                try {
+                    const payload = {};
+                    if (this.currentAgentConfig) {
+                        payload.agent_config = this.currentAgentConfig;
+                    }
+
+                    const response = await fetch('/api/initialize', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        this.isInitialized = true;
+                        this.updateStatus(true);
+                        this.displayTools(data.tools);
+                        const configName = this.agentConfigs[this.currentAgentConfig]?.name || 'Default Agent';
+                        this.addMessage('ai', `${configName} initialized successfully! I now have access to ${data.tools_count} tools.`);
+                    } else {
+                        throw new Error(data.error);
+                    }
+                } catch (error) {
+                    console.error('Initialization failed:', error);
+                    this.addMessage('ai', `❌ Failed to initialize agent: ${error.message}`, true);
+                    this.initButton.innerHTML = '<span class="status-indicator disconnected"></span> Retry Initialization';
+                    this.initButton.disabled = false;
+                } finally {
+                    this.isLoading = false;
+                }
+            }
+
+            async loadTools() {
+                try {
+                    const params = new URLSearchParams();
+                    if (this.currentAgentConfig) {
+                        params.append('agent_config', this.currentAgentConfig);
+                    }
+                    
+                    const response = await fetch(`/api/tools?${params}`);
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        this.displayTools(data.tools);
+                    }
+                } catch (error) {
+                    console.error('Failed to load tools:', error);
+                }
+            }
+
+
+
+            displayTools(tools) {
+                this.toolsList.innerHTML = tools.map(tool => `
+                    <div class="tool-item">
+                        <div class="tool-name">${tool.name}</div>
+                        <div class="tool-description">${tool.description}</div>
+                    </div>
+                `).join('');
+            }
+
+            async sendMessage() {
+                const message = this.messageInput.value.trim();
+                if (!message || this.isLoading) return;
+                
+                this.addMessage('user', message);
+                this.messageInput.value = '';
+                this.adjustTextareaHeight();
+                this.setLoading(true);
+
+                try {
+                    // Build the request payload
+                    const payload = {
+                        message: message,
+                        thread_id: this.conversationId
+                    };
+                    
+                    // Add agent_config if selected
+                    if (this.currentAgentConfig) {
+                        payload.agent_config = this.currentAgentConfig;
+                    }
+
+                    const response = await fetch('/api/chat', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        this.addMessage('ai', data.response, false, data.tools_used);
+                        this.setLoading(false);
+                    } else {
+                        this.addMessage('ai', `❌ Error: ${data.error}`, true);
+                        this.setLoading(false);
+                    }
+                } catch (error) {
+                    console.error('Chat error:', error);
+                    this.addMessage('ai', `❌ Failed to send message: ${error.message}`, true);
+                    this.setLoading(false);
+                }
+            }
+
+            async pollTaskResult(taskId, maxAttempts = 30) {
+                for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+                    try {
+                        const response = await fetch(`/api/async/tasks/${taskId}`);
+                        const data = await response.json();
+
+                        if (data.state === 'SUCCESS') {
+                            this.addMessage('ai', data.result.response, false, data.result.tools_used);
+                            this.setLoading(false);
+                            return;
+                        } else if (data.state === 'FAILURE' || data.state === 'ERROR') {
+                            this.addMessage('ai', `❌ Task failed: ${data.result?.error || 'Unknown error'}`, true);
+                            this.setLoading(false);
+                            return;
+                        }
+                        
+                        // Wait before next poll
+                        await new Promise(resolve => setTimeout(resolve, 2000));
+                    } catch (error) {
+                        console.error('Polling error:', error);
+                        this.addMessage('ai', `❌ Error checking task status: ${error.message}`, true);
+                        this.setLoading(false);
+                        return;
+                    }
+                }
+                
+                // Timeout
+                this.addMessage('ai', '❌ Task timed out', true);
+                this.setLoading(false);
+            }
+
+            addMessage(type, content, isError = false, toolsUsed = []) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${type}`;
+                
+                const contentDiv = document.createElement('div');
+                contentDiv.className = 'message-content';
+                
+                if (isError) {
+                    contentDiv.style.background = '#f8d7da';
+                    contentDiv.style.borderColor = '#f5c6cb';
+                    contentDiv.style.color = '#721c24';
+                }
+                
+                // Format content with basic markdown support
+                const formattedContent = content
+                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                    .replace(/\n/g, '<br>');
+                
+                contentDiv.innerHTML = formattedContent;
+                
+                const metaDiv = document.createElement('div');
+                metaDiv.className = 'message-meta';
+                metaDiv.textContent = new Date().toLocaleTimeString();
+                
+                messageDiv.appendChild(contentDiv);
+                
+                if (toolsUsed && toolsUsed.length > 0) {
+                    const toolsDiv = document.createElement('div');
+                    toolsDiv.className = 'tools-used';
+                    toolsDiv.innerHTML = 'Tools used: ' + 
+                        toolsUsed.map(tool => `<span class="tool-badge">${tool}</span>`).join('');
+                    messageDiv.appendChild(toolsDiv);
+                }
+                
+                messageDiv.appendChild(metaDiv);
+                this.messages.appendChild(messageDiv);
+                this.messages.scrollTop = this.messages.scrollHeight;
+            }
+
+            setLoading(isLoading) {
+                this.isLoading = isLoading;
+                this.sendButton.disabled = isLoading || !this.isInitialized;
+                this.messageInput.disabled = isLoading || !this.isInitialized;
+                
+                if (isLoading) {
+                    this.sendButton.innerHTML = '<div class="loading"></div>';
+                } else {
+                    this.sendButton.innerHTML = `
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M2,21L23,12L2,3V10L17,12L2,14V21Z" />
+                        </svg>
+                    `;
+                }
+            }
+
+            clearChat() {
+                // Keep only the welcome message for the new agent
+                const welcomeMessage = this.messages.querySelector('.message.ai');
+                this.messages.innerHTML = '';
+                if (welcomeMessage) {
+                    this.messages.appendChild(welcomeMessage);
+                }
+            }
+        }
+
+        // Initialize the UI when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new GenericAgentUI();
+        });
+    </script>
+</body>
+</html> 

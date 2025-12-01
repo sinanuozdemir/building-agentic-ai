@@ -1,0 +1,25 @@
+# Shared Dockerfile for MCP Servers
+# Use Python 3.11 slim image
+FROM python:3.11-slim
+
+# Set working directory
+WORKDIR /app
+
+# Copy requirements first for better layer caching
+COPY requirements.txt .
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy the MCP server code
+COPY mcp_server.py .
+
+# Make the script executable
+RUN chmod +x mcp_server.py
+
+# Set environment variables
+ENV PYTHONPATH=/app
+ENV PYTHONUNBUFFERED=1
+
+# Run the MCP server
+CMD ["python", "mcp_server.py"] 
