@@ -10,7 +10,7 @@ from typing import Dict, List, Any
 from datetime import datetime
 
 from langchain_mcp_adapters.client import MultiServerMCPClient
-from langgraph.prebuilt import create_react_agent
+from langchain.agents import create_agent
 from langgraph.checkpoint.memory import MemorySaver
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, AIMessage
@@ -171,10 +171,10 @@ class GenericAgent:
             prompt = self._get_system_prompt()
 
             # Create the agent with checkpointer for memory
-            self.agent = create_react_agent(
-                model=llm, 
-                tools=self.tools, 
-                prompt=prompt,
+            self.agent = create_agent(
+                llm, 
+                self.tools, 
+                system_prompt=prompt,
                 checkpointer=self.checkpointer
             )
             self.initialized = True

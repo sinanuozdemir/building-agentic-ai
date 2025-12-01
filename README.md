@@ -730,15 +730,15 @@ if __name__ == "__main__":
 Creating ReAct agents with LangGraph:
 
 ```python
-from langgraph.prebuilt import create_react_agent
+from langchain.agents import create_agent
 from langgraph.checkpoint.memory import MemorySaver
 from langchain_openai import ChatOpenAI
 
-llm = ChatOpenAI(model="gpt-4")
+llm = ChatOpenAI(model="gpt-5.1")
 tools = [tool1, tool2, tool3]
 checkpointer = MemorySaver()
 
-agent = create_react_agent(
+agent = create_agent(
     llm,
     tools,
     prompt=system_prompt,

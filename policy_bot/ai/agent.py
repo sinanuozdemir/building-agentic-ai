@@ -3,7 +3,7 @@ from typing import List, Dict, Any, Optional
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
-from langgraph.prebuilt import create_react_agent
+from langchain.agents import create_agent
 from langchain.tools import BaseTool
 from langchain.agents.react.base import DocstoreExplorer
 from langchain_core.tools import tool
@@ -150,10 +150,10 @@ Remember: You are here to help users navigate {self.company_name} policies effec
 
         # Create the agent
         checkpointer = MemorySaver()  # For conversation memory
-        agent = create_react_agent(
+        agent = create_agent(
             self.llm, 
             tools, 
-            prompt=self.system_prompt,
+            system_prompt=self.system_prompt,
             checkpointer=checkpointer
         )
         return agent

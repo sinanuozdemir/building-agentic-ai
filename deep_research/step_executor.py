@@ -4,7 +4,7 @@ from serpapi import GoogleSearch
 from langchain.tools import Tool
 from langchain_openai import ChatOpenAI
 from datetime import datetime
-from langgraph.prebuilt import create_react_agent
+from langchain.agents import create_agent
 from langchain_core.prompts import ChatPromptTemplate  # Use langchain_core as in file_context_0
 import re
 from langgraph.checkpoint.memory import MemorySaver
@@ -122,5 +122,5 @@ def create_step_executor(openrouter_model_name):
     llm = ChatOpenAI(
         model=openrouter_model_name, base_url="https://openrouter.ai/api/v1", api_key=os.environ.get("OPENROUTER_API_KEY")
     )
-    return create_react_agent(llm, tools, prompt=get_react_system_prompt(), checkpointer=MemorySaver())
+    return create_agent(llm, tools, system_prompt=get_react_system_prompt(), checkpointer=MemorySaver())
     
