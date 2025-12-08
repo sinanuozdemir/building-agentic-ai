@@ -2,15 +2,15 @@
   <img src="images/cover.png" alt="Applied AI Book Cover" width="400"/>
 </div>
 
-# Applied AI Book - Code Repository
+# Building Agentic AI Book - Code Repository
 
 **Buy the Book on Amazon:** [https://a.co/d/eaTeURV](https://a.co/d/eaTeURV)
 
-This repository contains code examples, experiments, and implementations for the **Applied AI** book by Sinan Ozdemir. The book offers a practical, durable foundation for understanding how modern AI systems are built, why they behave the way they do, and how to push them to their limits.
+This repository contains code examples, experiments, and implementations for the **Building Agentic AI** book by Sinan Ozdemir. The book offers a practical, durable foundation for understanding how modern AI systems are built, why they behave the way they do, and how to push them to their limits.
 
 ## About the Book
 
-**Applied AI** is a practical guide for builders. If you're a developer deploying your first model, a data scientist making sense of embeddings and agents, or a founder exploring how AI workflows can reshape your product, this repository provides the code and examples to accompany your learning journey.
+**Building Agentic AI** is a practical guide for builders. If you're a developer deploying your first model, a data scientist making sense of embeddings and agents, or a founder exploring how AI workflows can reshape your product, this repository provides the code and examples to accompany your learning journey.
 
 The book is organized in three acts:
 - **Act I: Foundations** — LLMs, embeddings, retrieval, and workflows for reliable, cost-effective, scalable systems
@@ -832,7 +832,7 @@ structured_llm = llm.with_structured_output(ScoreResponse)
 
 ## License
 
-This repository contains code examples and implementations for the Applied AI book. Please refer to the book for detailed explanations and context.
+This repository contains code examples and implementations for the Building Agentic AI book. Please refer to the book for detailed explanations and context.
 
 ---
 
